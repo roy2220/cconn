@@ -34,7 +34,7 @@ import (
 )
 
 // DefaultWatcherIdleTimeout is the default value for the WatcherIdleTimeout option.
-const DefaultWatcherIdleTimeout = 5 * time.Millisecond
+const DefaultWatcherIdleTimeout = 5 * time.Second
 
 // Conn represents a wrapper for net.Conn.
 type Conn struct {
