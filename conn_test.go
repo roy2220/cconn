@@ -166,6 +166,9 @@ func testConn_SetIOContext(t *testing.T, read bool) {
 			When: "io context has been cancelled",
 			Then: "io should fail",
 			Setup: func(tc *TestCase) {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				tc.Input.Ctx = ctx
 				if read {
 					tc.State.ReadContext.Version = 2
 					tc.State.LastReadErrStr = context.Canceled.Error()
@@ -173,10 +176,6 @@ func testConn_SetIOContext(t *testing.T, read bool) {
 					tc.State.WriteContext.Version = 2
 					tc.State.LastWriteErrStr = context.Canceled.Error()
 				}
-
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel()
-				tc.Input.Ctx = ctx
 			},
 			Teardown: func(tc *TestCase) {
 				for i := 0; i < 2; i++ {
@@ -237,18 +236,21 @@ func testConn_SetIOContext(t *testing.T, read bool) {
 			When: "io context has been updated",
 			Then: "io should respect latest io context",
 			Setup: func(tc *TestCase) {
+				if read {
+					tc.State.ReadContext.Version = 2
+					tc.State.LastReadErrStr = context.DeadlineExceeded.Error()
+				} else {
+					tc.State.WriteContext.Version = 2
+					tc.State.LastWriteErrStr = context.DeadlineExceeded.Error()
+				}
 				time.AfterFunc(5*time.Millisecond, func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 					_ = cancel
 					var err error
 					if read {
 						err = tc.c.SetReadContext(ctx)
-						tc.State.ReadContext.Version = 2
-						tc.State.LastReadErrStr = context.DeadlineExceeded.Error()
 					} else {
 						err = tc.c.SetWriteContext(ctx)
-						tc.State.WriteContext.Version = 2
-						tc.State.LastWriteErrStr = context.DeadlineExceeded.Error()
 					}
 					assert.NoError(t, err)
 				})
