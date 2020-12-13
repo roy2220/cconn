@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.14
+
+script:
+  - make TESTFLAGS='-race -coverprofile=coverage.txt'
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

@@ -1,5 +1,5 @@
 .ONESHELL:
-export SHELL := /usr/bin/bash
+export SHELL := bash
 export SHELLOPTS := errexit:nounset:pipefail:xtrace
 
 all: imports lint vet test
