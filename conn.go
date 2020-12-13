@@ -145,7 +145,7 @@ func (c *Conn) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// Write closes the underlying net.Conn and make the watcher goroutine exit.
+// Close closes the underlying net.Conn and make the watcher goroutine exit.
 func (c *Conn) Close() error {
 	err := c.c.Close()
 	c.mu.Lock()
