@@ -4,15 +4,15 @@ export SHELLOPTS := errexit:nounset:pipefail:xtrace
 
 all: imports lint vet test
 
-override fmts := $(patsubst %.go,build/goimports/%.fmt,$(shell find -path '*/.*' -prune -o -type f -name '*.go' -printf '%P\n'))
-imports: force build/bin/goimports $(fmts)
+override imports_deps := $(patsubst %.go,build/goimports/%,$(shell find -path '*/.*' -prune -o -type f -name '*.go' -printf '%P\n'))
+imports: force build/bin/goimports $(imports_deps)
 
 build/bin/goimports:
 	go build -o $@ golang.org/x/tools/cmd/goimports
 
-build/goimports/%.fmt: %.go
+build/goimports/%: %.go
 	build/bin/goimports -format-only -w $(IMPORTSFLAGS) $<
-	install -D /dev/null $@
+	install -D --mode 444 /dev/null $@
 
 lint: force build/bin/golint
 	build/bin/golint -set_exit_status $(LINTFLAGS) ./...
