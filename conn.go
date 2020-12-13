@@ -203,10 +203,10 @@ func (c *Conn) Inspect() ConnDetails {
 	}
 }
 
-// LocalAddr returns the local address of underlying net.Conn.
+// LocalAddr returns the local address of the underlying net.Conn.
 func (c *Conn) LocalAddr() net.Addr { return c.c.LocalAddr() }
 
-// RemoteAddr returns the remote address of underlying net.Conn.
+// RemoteAddr returns the remote address of the underlying net.Conn.
 func (c *Conn) RemoteAddr() net.Addr { return c.c.RemoteAddr() }
 
 func (c *Conn) sendUpdate() {
