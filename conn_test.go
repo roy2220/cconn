@@ -3,7 +3,9 @@ package cconn_test
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -434,4 +436,70 @@ func TestConn_RemoteAddr(t *testing.T) {
 	defer c.Close()
 	addr := c.RemoteAddr()
 	assert.Equal(t, "pipe", addr.String())
+}
+
+func TestConnRace(t *testing.T) {
+	cs := make([]*cconn.Conn, 10)
+	for i := range cs {
+		cc1, cc2 := net.Pipe()
+		defer cc2.Close()
+		c := new(cconn.Conn).Init(cc1)
+		defer c.Close()
+		cs[i] = c
+	}
+	const N = 100
+	var wg sync.WaitGroup
+	for i := 0; i < N; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < N; i++ {
+				c := cs[rand.Intn(len(cs))]
+				switch rand.Intn(5) {
+				case 0:
+					to := time.Duration((rand.Intn(4)-1)*10) * time.Millisecond
+					c.SetWatcherIdleTimeout(to)
+				case 1, 2:
+					to := time.Duration(rand.Intn(3)*10) * time.Millisecond
+					ctx, cancel := context.WithTimeout(context.Background(), to)
+					_ = cancel
+					err := c.SetReadContext(ctx)
+					assert.NoError(t, err)
+
+					b := make([]byte, N)
+					n, err := c.Read(b)
+					if err == nil {
+						assert.Equal(t, N, n)
+					} else {
+						assert.EqualError(t, err, context.DeadlineExceeded.Error())
+					}
+				case 3, 4:
+					to := time.Duration(rand.Intn(3)*10) * time.Millisecond
+					var cancel context.CancelFunc
+					ctx, cancel := context.WithTimeout(context.Background(), to)
+					_ = cancel
+					err := c.SetWriteContext(ctx)
+					assert.NoError(t, err)
+
+					b := make([]byte, N)
+					n, err := c.Write(b)
+					if err == nil {
+						assert.Equal(t, N, n)
+					} else {
+						assert.EqualError(t, err, context.DeadlineExceeded.Error())
+					}
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	for _, c := range cs {
+		err := c.Close()
+		if !assert.NoError(t, err) {
+			t.FailNow()
+		}
+		time.Sleep(10 * time.Millisecond)
+		ds := c.Inspect()
+		assert.False(t, ds.WatcherIsRunning)
+	}
 }
