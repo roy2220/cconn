@@ -192,12 +192,12 @@ func testConn_SetIOContext(t *testing.T, read bool) {
 					}
 					assert.EqualError(t, err, context.Canceled.Error())
 					if i == 0 {
+						time.Sleep(10 * time.Millisecond)
 						if read {
 							tc.State.ReadContext.Version = 2
 						} else {
 							tc.State.WriteContext.Version = 2
 						}
-						time.Sleep(10 * time.Millisecond)
 					}
 				}
 			},

@@ -5,8 +5,8 @@
 // the done events of both the Read context and the Write context. Once the Read/Write
 // context is done, the watcher goroutine cache the error from the context and then
 // interrupt any currently-blocked Read/Write call by SetReadContext(past)/SetWriteDeadline(past).
-// For the Read/Write caller, once the call returns a timeout error, it retrieves the
-// last-cached error by the watcher goroutine and returns that error instead.
+// For the Read/Write caller, if the call returns a timeout error, it retrieves the
+// error last cached by the watcher goroutine and returns that error instead.
 //
 // The watcher goroutine is created lazily and the WatcherIdleTimeout option determines
 // it's lifetime:
@@ -15,14 +15,15 @@
 // until the connection has been closed;
 //
 // • If WatcherIdleTimeout has a zero value, the watcher goroutine exits when both
-// the Read context and Write context are set to context.Background(), or the connection
-// has been closed;
+// the Read context and Write context are equal to context.Background(), or the
+// connection has been closed;
 //
 // • If WatcherIdleTimeout has a positive value e.g. Ts, the watcher goroutine
-// exits when both the Read context and Write context are set to context.Background()
+// exits when both the Read context and Write context are equal to context.Background()
 // and none of them has been updated in the following Ts, or the connection has been
 // closed.
 //
+// The default value for the Read/Write context is context.Background().
 // The default value for WatcherIdleTimeout is 5s.
 package cconn
 
@@ -51,7 +52,7 @@ type Conn struct {
 }
 
 // Init initializes the wrapper with the given net.Conn and returns it.
-// Use new(Conn).Init() to create and initialize a Conn instance at once.
+// Use `c := new(Conn).Init(...)` to create and initialize a Conn instance at once.
 func (c *Conn) Init(cc net.Conn) *Conn {
 	c.c = cc
 	c.updates = make(chan struct{}, 1)
@@ -77,7 +78,9 @@ func (c *Conn) SetReadContext(ctx context.Context) error {
 	}
 	done := ctx.Done()
 	if done == nil {
+		// ctx == context.Background()
 		if c.readContext.Done == nil {
+			// c.readContext == context.Background()
 			return nil
 		}
 		ctx = nil
@@ -105,7 +108,9 @@ func (c *Conn) SetWriteContext(ctx context.Context) error {
 	}
 	done := ctx.Done()
 	if done == nil {
+		// ctx == context.Background()
 		if c.writeContext.Done == nil {
+			// c.writeContext == context.Background()
 			return nil
 		}
 		ctx = nil
@@ -241,6 +246,7 @@ func (w *watcher) Run() {
 		}
 	}()
 	if !conn.watcherIsRunning {
+		// conn is closed
 		return
 	}
 	for {
@@ -257,6 +263,7 @@ func (w *watcher) Run() {
 		mu = &conn.mu
 		mu.Lock()
 		if !conn.watcherIsRunning {
+			// conn is closed
 			return
 		}
 		if ok {
