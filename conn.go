@@ -34,9 +34,6 @@ import (
 	"time"
 )
 
-// DefaultWatcherIdleTimeout is the default value for the WatcherIdleTimeout option.
-const DefaultWatcherIdleTimeout = 5 * time.Second
-
 // Conn represents a wrapper for net.Conn.
 type Conn struct {
 	c net.Conn
@@ -220,6 +217,9 @@ func (c *Conn) sendUpdate() {
 	default:
 	}
 }
+
+// DefaultWatcherIdleTimeout is the default value for the WatcherIdleTimeout option.
+var DefaultWatcherIdleTimeout time.Duration = 5 * time.Second
 
 type ioContext struct {
 	Ctx     context.Context

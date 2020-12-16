@@ -4,8 +4,8 @@ export SHELLOPTS := errexit:nounset:pipefail:xtrace
 
 all: imports lint vet test
 
-override imports_deps := $(patsubst %.go,build/goimports/%,$(shell find -path '*/.*' -prune -o -type f -name '*.go' -printf '%P\n'))
-imports: force build/bin/goimports $(imports_deps)
+imports: force build/bin/goimports \
+$(patsubst %.go,build/goimports/%,$(shell find -path '*/.*' -prune -o -type f -name '*.go' -printf '%P\n'))
 
 build/bin/goimports:
 	go build -o $@ golang.org/x/tools/cmd/goimports
